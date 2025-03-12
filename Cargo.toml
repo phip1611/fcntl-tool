@@ -1,0 +1,47 @@
+[package]
+name = "fcntl-util"
+description = """
+Your small yet useful swiss army knife for the `fcntl` system call, specifically
+for acquiring and testing file locks, but not limited to those.
+"""
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74.1"
+keywords = ["fcntl", "file-locking", "unix", "posix"]
+categories = ["command-line-utilities", "filesystem"]
+readme = "README.md"
+license = "MIT"
+homepage = "https://github.com/phip1611/fcntl-tool"
+repository = "https://github.com/phip1611/fcntl-tool"
+documentation = "https://docs.rs/fcntl-tool"
+authors = [
+  "Philipp Schuster <phip1611@gmail.com>",
+]
+
+[profile.release]
+lto = true
+opt-level = "s"
+
+[dependencies.anyhow]
+version = "1.0.97"
+default-features = false
+features = ["default"]
+
+[dependencies.nix]
+version = "0.29.0"
+default-features = false
+features = ["fs"]
+
+[dependencies.clap]
+version = "4.5"
+features = [
+  "color",
+  "derive",
+  "error-context",
+  "help",
+  "std",
+  "suggestions",
+  "unicode",
+  "usage",
+  "wrap_help",
+]

@@ -1,0 +1,60 @@
+name: Build + Test
+
+on:
+  merge_group:
+  pull_request:
+  push:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build + Test
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [ macos-latest, ubuntu-latest ]
+        rust: [ 1.85.0, stable, nightly ]
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: "${{ matrix.runs-on }}-${{ matrix.rust }}"
+      - name: cargo check (debug)
+        run: cargo check --verbose
+      - name: cargo check (release)
+        run: cargo check --release --verbose
+      - name: cargo build (debug)
+        run: cargo build --verbose
+      - name: cargo build (release)
+        run: cargo build --release --verbose
+      - name: cargo test
+        run: cargo test --verbose
+      - name: Test CLI help text test
+        run: cargo run -- --help
+      - name: Integrationtest
+        run: |
+          # Test that everything works by showing idempotence.
+          for i in {1..10}; do
+            ./integration-test.sh
+          done
+
+  style_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt -- --check
+      - run: cargo clippy --all-targets
+      - run: cargo doc --document-private-items --no-deps

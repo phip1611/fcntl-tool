@@ -7,7 +7,6 @@ use nix::libc;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io;
-use std::os::fd::AsRawFd;
 
 #[derive(Clone, Copy, Debug)]
 pub enum LockType {
@@ -197,7 +196,7 @@ pub fn try_acquire_lock(
     let flock = get_flock(lock_type);
     let arg = operation.to_fcntl_arg(&flock);
 
-    let res = fcntl(file.as_raw_fd(), arg);
+    let res = fcntl(file, arg);
     match res {
         Ok(_) => Ok(()),
         // See man page for error code:
@@ -217,7 +216,7 @@ pub fn get_lock_state(file: &File, operation: LockOperation) -> anyhow::Result<L
     let operation = GetLockOperation::from(operation);
     let mut flock = get_flock(LockType::Write);
     let arg = operation.to_fcntl_arg(&mut flock);
-    let ret = fcntl(file.as_raw_fd(), arg)?;
+    let ret = fcntl(file, arg)?;
     if ret != 0 {
         Err(io::Error::last_os_error().into())
     } else {

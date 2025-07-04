@@ -128,7 +128,7 @@ struct SetLockOperation(LockOperation);
 impl SetLockOperation {
     // allow: To keep 1.74.1 as MSRV
     #[allow(clippy::missing_const_for_fn)]
-    fn to_fcntl_arg(self, flock: &libc::flock) -> FcntlArg {
+    fn to_fcntl_arg<'a>(self, flock: &'a libc::flock) -> FcntlArg<'a> {
         match self.0 {
             LockOperation::Traditional => FcntlArg::F_SETLK(flock),
             #[cfg(any(target_os = "android", target_os = "linux"))]
@@ -147,7 +147,7 @@ impl From<LockOperation> for SetLockOperation {
 struct GetLockOperation(LockOperation);
 
 impl GetLockOperation {
-    fn to_fcntl_arg(self, flock: &mut libc::flock) -> FcntlArg {
+    fn to_fcntl_arg<'a>(self, flock: &'a mut libc::flock) -> FcntlArg<'a> {
         match self.0 {
             LockOperation::Traditional => FcntlArg::F_GETLK(flock),
             #[cfg(any(target_os = "android", target_os = "linux"))]

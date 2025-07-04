@@ -101,7 +101,7 @@ fn main() -> anyhow::Result<()> {
             let file = open_file(file, false)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
             let state = fcntl::get_lock_state(&file, operation)?;
-            println!("state: {:?}", state);
+            println!("state: {state:?}");
         }
     }
     Ok(())

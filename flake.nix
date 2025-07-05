@@ -1,5 +1,5 @@
 {
-  description = "uefi-rs";
+  description = "fcntl-tool";
 
   inputs = {
     # We follow the latest stable release of nixpkgs

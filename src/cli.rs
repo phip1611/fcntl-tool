@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// specifically for acquiring and testing file locks, but not limited to those.
 #[derive(Parser)]
 #[command(version, about, long_about)]
-pub(crate) struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
 }

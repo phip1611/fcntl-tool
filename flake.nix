@@ -19,10 +19,17 @@
         function: nixpkgs.lib.genAttrs systems (system: function nixpkgs.legacyPackages.${system});
     in
     {
-      formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
       packages = forAllSystems (pkgs: {
         default = pkgs.rustPlatform.buildRustPackage rec {
-          src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
+          src =
+            let
+              fs = pkgs.lib.fileset;
+            in
+            fs.toSource {
+              root = ./.;
+              fileset = fs.gitTracked ./.;
+            };
           name = "fcntl-tool";
           cargoDeps = pkgs.rustPlatform.importCargoLock {
             lockFile = ./Cargo.lock;

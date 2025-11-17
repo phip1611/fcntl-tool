@@ -29,8 +29,8 @@ impl Display for LockScope {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             // must match the way clap accepts arguments
-            LockScope::WholeFile => write!(f, "whole-file"),
-            LockScope::WholeByteRange => write!(f, "whole-byte-range"),
+            Self::WholeFile => write!(f, "whole-file"),
+            Self::WholeByteRange => write!(f, "whole-byte-range"),
         }
     }
 }

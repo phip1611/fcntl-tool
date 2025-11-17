@@ -4,9 +4,9 @@ description = """
 Your small yet useful swiss army knife for the `fcntl` system call, specifically
 for acquiring and testing file locks, but not limited to those.
 """
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.74.1"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85.1"
 keywords = ["fcntl", "file-locking", "unix", "posix"]
 categories = ["command-line-utilities", "filesystem"]
 readme = "README.md"

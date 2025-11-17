@@ -76,19 +76,25 @@ fn main() -> anyhow::Result<()> {
     let cli: cli::Cli = cli::Cli::parse();
 
     match &cli.command {
-        cmd @ cli::Command::WriteLock { file: path, scope, .. } => {
+        cmd @ cli::Command::WriteLock {
+            file: path, scope, ..
+        } => {
             let mut file = open_file(path, true)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
             fcntl::try_acquire_lock(&mut file, fcntl::LockType::Write, operation, scope)?;
             wait_for_enter(fcntl::LockType::Write, path);
         }
-        cmd @ cli::Command::ReadLock { file: path, scope, .. } => {
+        cmd @ cli::Command::ReadLock {
+            file: path, scope, ..
+        } => {
             let mut file = open_file(path, false)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
             fcntl::try_acquire_lock(&mut file, fcntl::LockType::Read, operation, scope)?;
             wait_for_enter(fcntl::LockType::Read, path);
         }
-        cmd @ cli::Command::TestLock { file: path, scope, .. } => {
+        cmd @ cli::Command::TestLock {
+            file: path, scope, ..
+        } => {
             let file = open_file(path, false)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
             let state = fcntl::get_lock_state(&file, operation, scope)?;

@@ -3,7 +3,7 @@ use crate::cli;
 use crate::cli::LockScope;
 use anyhow::anyhow;
 use nix::errno::Errno;
-use nix::fcntl::{fcntl, FcntlArg};
+use nix::fcntl::{FcntlArg, fcntl};
 use nix::libc;
 use nix::libc::off_t;
 use std::fmt::{Debug, Display, Formatter};
@@ -65,8 +65,8 @@ fn get_flock_len(scope: &LockScope, file: &File) -> anyhow::Result<off_t> {
             let len = file
                 .metadata()
                 .map(|m| m.len())
-                .map_err(|e| anyhow::Error::new(e))?;
-            off_t::try_from(len).map_err(|e| anyhow::Error::new(e))
+                .map_err(anyhow::Error::new)?;
+            off_t::try_from(len).map_err(anyhow::Error::new)
         }
     }
 }
@@ -162,7 +162,7 @@ impl From<LockOperation> for SetLockOperation {
 struct GetLockOperation(LockOperation);
 
 impl GetLockOperation {
-    fn to_fcntl_arg<'a>(self, flock: &'a mut libc::flock) -> FcntlArg<'a> {
+    const fn to_fcntl_arg(self, flock: &mut libc::flock) -> FcntlArg<'_> {
         match self.0 {
             LockOperation::Traditional => FcntlArg::F_GETLK(flock),
             #[cfg(any(target_os = "android", target_os = "linux"))]

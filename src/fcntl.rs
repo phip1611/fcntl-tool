@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: MIT OR Apache-2.0 */
 use crate::cli;
+use crate::cli::LockScope;
 use anyhow::anyhow;
 use nix::errno::Errno;
 use nix::fcntl::{fcntl, FcntlArg};
 use nix::libc;
+use nix::libc::off_t;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io;
@@ -41,7 +43,7 @@ impl TryFrom<libc::c_int> for LockState {
             F_UNLCK => Ok(Self::Unlocked),
             F_WRLCK => Ok(Self::ExclusiveWrite),
             F_RDLCK => Ok(Self::SharedRead),
-            _ => Err(anyhow!("Invalid lock type {value}")),
+            _ => Err(anyhow!("invalid lock type {value}")),
         }
     }
 }
@@ -56,13 +58,26 @@ impl Display for LockState {
     }
 }
 
+fn get_flock_len(scope: &LockScope, file: &File) -> anyhow::Result<off_t> {
+    match scope {
+        LockScope::WholeFile => Ok(0 /* EOF */),
+        LockScope::WholeByteRange => {
+            let len = file
+                .metadata()
+                .map(|m| m.len())
+                .map_err(|e| anyhow::Error::new(e))?;
+            off_t::try_from(len).map_err(|e| anyhow::Error::new(e))
+        }
+    }
+}
+
 /// Returns a [`struct@libc::flock`] structure for the whole file.
-const fn get_flock(lock_type: LockType) -> libc::flock {
+const fn get_flock(lock_type: LockType, len: off_t) -> libc::flock {
     libc::flock {
         l_type: lock_type.to_libc_val() as libc::c_short,
         l_whence: libc::SEEK_SET as libc::c_short,
         l_start: 0,
-        l_len: 0, /* EOF */
+        l_len: len,
         l_pid: 0, /* filled by callee */
     }
 }
@@ -117,7 +132,7 @@ impl TryFrom<&cli::Command> for LockOperation {
                     Ok(Self::OpenFileDescription)
                 }
             }
-            _ => Err(anyhow!("Can't create a `LockOperation` from {value:?}")),
+            _ => Err(anyhow!("can't create a `LockOperation` from {value:?}")),
         }
     }
 }
@@ -183,17 +198,20 @@ impl std::error::Error for FileAlreadyLockedError {}
 /// - `file`: The file to acquire a lock for [`LockType`]
 /// - `lock_type`: The [`LockType`]
 /// - `operation`: The [`LockOperation`]
+/// - `scope`: The [`LockScope`]
 pub fn try_acquire_lock(
     file: &mut File,
     lock_type: LockType,
     operation: LockOperation,
+    scope: &LockScope,
 ) -> anyhow::Result<()> {
     // Ensure that clippy understands we want a mutable binding.
     // We mark the binding as mutable as meta state for that file will be
     // altered in the callee (the kernel).
     let file: &mut File = file;
     let operation = SetLockOperation::from(operation);
-    let flock = get_flock(lock_type);
+    let flock_len = get_flock_len(scope, file)?;
+    let flock = get_flock(lock_type, flock_len);
     let arg = operation.to_fcntl_arg(&flock);
 
     let res = fcntl(file, arg);
@@ -202,7 +220,7 @@ pub fn try_acquire_lock(
         // See man page for error code:
         // <https://man7.org/linux/man-pages/man2/fcntl.2.html>
         Err(Errno::EAGAIN | Errno::EACCES) => Err(FileAlreadyLockedError.into()),
-        Err(_) => Err(anyhow!("Trying to get {lock_type:?} lock")),
+        Err(e) => Err(anyhow!("error trying to get {lock_type:?} lock {e:?}")),
     }
 }
 
@@ -212,9 +230,15 @@ pub fn try_acquire_lock(
 /// # Parameters
 /// - `file`: The file to acquire a lock for [`LockType`]
 /// - `operation`: The [`LockOperation`]
-pub fn get_lock_state(file: &File, operation: LockOperation) -> anyhow::Result<LockState> {
+/// - `scope`: The [`LockScope`]
+pub fn get_lock_state(
+    file: &File,
+    operation: LockOperation,
+    scope: &LockScope,
+) -> anyhow::Result<LockState> {
     let operation = GetLockOperation::from(operation);
-    let mut flock = get_flock(LockType::Write);
+    let flock_len = get_flock_len(scope, file)?;
+    let mut flock = get_flock(LockType::Write, flock_len);
     let arg = operation.to_fcntl_arg(&mut flock);
     let ret = fcntl(file, arg)?;
     if ret != 0 {

@@ -54,13 +54,13 @@ use std::path::Path;
 mod cli;
 mod fcntl;
 
-fn wait_for_enter(lock_type: fcntl::LockType) {
+fn wait_for_enter(lock_type: fcntl::LockType, path: &Path) {
     println!("Please press enter to release the {lock_type:?} lock ...");
     let mut buf = String::new();
     // blocking waits for enter (newline)
     std::io::stdout().flush().unwrap();
     let _ = std::io::stdin().read_line(&mut buf);
-    println!("Lock released");
+    println!("Lock released: type={lock_type:?}, file={}", path.display());
 }
 
 fn open_file(path: &Path, write: bool) -> anyhow::Result<File> {
@@ -76,22 +76,22 @@ fn main() -> anyhow::Result<()> {
     let cli: cli::Cli = cli::Cli::parse();
 
     match &cli.command {
-        cmd @ cli::Command::WriteLock { file, .. } => {
-            let mut file = open_file(file, true)?;
+        cmd @ cli::Command::WriteLock { file: path, scope, .. } => {
+            let mut file = open_file(path, true)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
-            fcntl::try_acquire_lock(&mut file, fcntl::LockType::Write, operation)?;
-            wait_for_enter(fcntl::LockType::Write);
+            fcntl::try_acquire_lock(&mut file, fcntl::LockType::Write, operation, scope)?;
+            wait_for_enter(fcntl::LockType::Write, path);
         }
-        cmd @ cli::Command::ReadLock { file, .. } => {
-            let mut file = open_file(file, false)?;
+        cmd @ cli::Command::ReadLock { file: path, scope, .. } => {
+            let mut file = open_file(path, false)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
-            fcntl::try_acquire_lock(&mut file, fcntl::LockType::Read, operation)?;
-            wait_for_enter(fcntl::LockType::Read);
+            fcntl::try_acquire_lock(&mut file, fcntl::LockType::Read, operation, scope)?;
+            wait_for_enter(fcntl::LockType::Read, path);
         }
-        cmd @ cli::Command::TestLock { file, .. } => {
-            let file = open_file(file, false)?;
+        cmd @ cli::Command::TestLock { file: path, scope, .. } => {
+            let file = open_file(path, false)?;
             let operation = fcntl::LockOperation::try_from(cmd)?;
-            let state = fcntl::get_lock_state(&file, operation)?;
+            let state = fcntl::get_lock_state(&file, operation, scope)?;
             println!("state: {state:?}");
         }
     }

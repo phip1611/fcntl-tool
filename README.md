@@ -54,4 +54,4 @@ You can also take a look onto the integration test in the repository.
 
 ## MSRV
 
-The MSRV of the binary is `1.85.0` stable.
+The MSRV of the binary is `1.85.1` stable.

@@ -41,12 +41,12 @@ Type `fcntl-tool --help` to get guidance.
 $ fcntl-tool --help
 
 # Terminal 1
-$ fcntl-tool write-lock --file ./foo.txt
+$ fcntl-tool write-lock ./foo.txt
 Please press enter to release the Write lock ...
 
 
 # Terminal 2
-$ fcntl-tool test-lock --file ./foo.txt
+$ fcntl-tool test-lock ./foo.txt pull
 state: ExclusiveWrite
 ```
 

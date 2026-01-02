@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## Unreleased
+- cargo metadata: license update
 
 ## v0.2.0 - 2025-11-17
 - **BREAKING**: Changed CLI
